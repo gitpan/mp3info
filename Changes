@@ -1,5 +1,10 @@
 Revision history for Perl extension mp3info.
 
+1.03  Tue Aug 12 19:01:35 2003
+	- Allow directories as arguments. It will process all MP3
+	files found in there.
+	- Add Build.PL file for Module::Build.
+
 1.02  Thu Jul 31 22:21:58 2003
-	- initial version; imported from MP3Tools
+	- Initial version; imported from MP3Tools.
 
