@@ -1,23 +1,24 @@
 #!/usr/bin/perl -w
-my $RCS_Id = '$Id: mp3info.pl,v 1.3 2003/08/12 17:32:24 jv Exp $ ';
+my $RCS_Id = '$Id: mp3info.pl,v 1.5 2003/08/13 20:03:29 jv Exp $ ';
 
 # Author          : Johan Vromans
 # Created On      : Thu Jul 31 22:35:53 2003
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Aug 12 18:26:17 2003
-# Update Count    : 12
+# Last Modified On: Wed Aug 13 22:02:48 2003
+# Update Count    : 37
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
 
-$VERSION = sprintf("%d.%02d", '$Revision: 1.3 $ ' =~ /: (\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", '$Revision: 1.5 $ ' =~ /: (\d+)\.(\d+)/);
 
 use strict;
 
 # Package name.
 my $my_package = 'Sciurix';
 # Program name and version.
-my ($my_name, $my_version) = $RCS_Id =~ /: (.+).pl,v ([\d.]+)/;
+my ($my_name) = $RCS_Id =~ /: (.+).pl,v/;
+my $my_version = $::VERSION;
 # Tack '*' if it is not checked in into RCS.
 $my_version .= '*' if length('$Locker:  $ ') > 12;
 
@@ -26,6 +27,7 @@ use lib $FindBin::Bin;
 
 ################ Command line parameters ################
 
+my $id3tags = 0;
 my $verbose = 0;		# more verbosity
 
 # Development options (not shown with --help).
@@ -48,43 +50,43 @@ my $TMPDIR = $ENV{TMPDIR} || $ENV{TEMP} || '/usr/tmp';
 use MP3::Info;
 
 foreach my $arg ( @ARGV ) {
+    $arg =~ s;/+$;;;
     my @files = -d $arg ? sort(glob("$arg/*.mp3")) : ( $arg );
     foreach my $file ( @files ) {
 	dump_info($file);
+	dump_tags($file) if $id3tags;
     }
 }
 
 ################ Subroutines ################
 
-=item get_mp3info (FILE)
-
-Returns hash reference containing file information for MP3 file.
-This data cannot be changed.  Returned data:
-
-	VERSION		MPEG audio version (1, 2, 2.5)
-	LAYER		MPEG layer description (1, 2, 3)
-	STEREO		boolean for audio is in stereo
-
-	VBR		boolean for variable bitrate
-	BITRATE		bitrate in kbps (average for VBR files)
-	FREQUENCY	frequency in kHz
-	SIZE		bytes in audio stream
-
-	SECS		total seconds
-	MM		minutes
-	SS		leftover seconds
-	MS		leftover milliseconds
-	TIME		time in MM:SS
-
-	COPYRIGHT	boolean for audio is copyrighted
-	PADDING		boolean for MP3 frames are padded
-	MODE		channel mode (0 = stereo, 1 = joint stereo,
-			2 = dual channel, 3 = single channel)
-	FRAMES		approximate number of frames
-	FRAME_LENGTH	approximate length of a frame
-	VBR_SCALE	VBR scale from VBR header
-
-=cut
+# get_mp3info
+#
+# Returns hash reference containing file information for MP3 file.
+# This data cannot be changed.  Returned data:
+#
+#	VERSION		MPEG audio version (1, 2, 2.5)
+#	LAYER		MPEG layer description (1, 2, 3)
+#	STEREO		boolean for audio is in stereo
+#
+#	VBR		boolean for variable bitrate
+#	BITRATE		bitrate in kbps (average for VBR files)
+#	FREQUENCY	frequency in kHz
+#	SIZE		bytes in audio stream
+#
+#	SECS		total seconds
+#	MM		minutes
+#	SS		leftover seconds
+#	MS		leftover milliseconds
+#	TIME		time in MM:SS
+#
+#	COPYRIGHT	boolean for audio is copyrighted
+#	PADDING		boolean for MP3 frames are padded
+#	MODE		channel mode (0 = stereo, 1 = joint stereo,
+#			2 = dual channel, 3 = single channel)
+#	FRAMES		approximate number of frames
+#	FRAME_LENGTH	approximate length of a frame
+#	VBR_SCALE	VBR scale from VBR header
 
 sub dump_info {
     my ($file) = @_;
@@ -143,6 +145,36 @@ sub dump_info {
       );
 }
 
+sub dump_tags {
+    my ($file) = @_;
+
+    my $info = get_mp3tag($file);
+    if ( !defined($info) && !$MP3::Info::try_harder
+	 && $@ =~ /try_harder/ ) {
+	$MP3::Info::try_harder = 1;
+	$info = get_mp3tag($file);
+    }
+    unless ( $info ) {
+	warn("$file: No info ($@)?\n");
+	return;
+    }
+
+    print STDOUT
+      (
+       $info->{ARTIST}   ? ("  Artist: ", $info->{ARTIST}, "\n") : (),
+       $info->{ALBUM}    ? ("  Album: ", $info->{ALBUM}, "\n") : (),
+       $info->{TITLE}    ?
+       ("  Track: ",
+        $info->{TRACKNUM} ? ("[", $info->{TRACKNUM}, "] ") : (),
+        $info->{TITLE}, "\n") : (),
+       $info->{YEAR} || $info->{GENRE} || $info->{COMMENT} ?
+       ("  ",
+        $info->{YEAR}    ? ("Year: ", $info->{YEAR}, "  ") : (),
+        $info->{GENRE}   ? ("Genre: ", $info->{GENRE}, "  ") : (),
+        $info->{COMMENT} ? ("Comment: ", $info->{COMMENT}, "  ") : (),
+        "\n") : ());
+}
+
 sub yn {
     $_[0] ? "Yes" : "No";
 }
@@ -165,6 +197,7 @@ sub app_options {
 	       'verbose|v' => \$verbose,
 
 	       # application specific options go here
+	       'id3tags|i' => \$id3tags,
 
 	       # development options
 	       test	   => \$test,
@@ -189,6 +222,7 @@ mp3info [options] [file_or_dir ...]
 
 Options:
 
+   --id3tags		print ID3 tags as well
    --ident		show identification
    --help		brief help message
    --verbose		verbose information
@@ -196,6 +230,10 @@ Options:
 =head1 OPTIONS
 
 =over 8
+
+=item B<--id3tags>
+
+Show some ID3 tags, like Artist, Album, Title, Track, Year and Genre.
 
 =item B<--verbose>
 

@@ -8,9 +8,9 @@ ok(1);
 my @dels = qw(x1.out);
 
 unlink(@dels);
-system("../blib/script/mp3info x1.mp3 > x1.out");
+system("../blib/script/mp3info --id3tag x1.mp3 > x1.out");
 
-ok(!differ("x1.out", "basic.ref"));
+ok(!differ("x1.out", "id3tags.ref"));
 
 unlink(@dels);
 
