@@ -25,6 +25,11 @@ This module requires these other modules and libraries:
 
   MP3::Info
 
+Building and testing requires:
+
+  Module::Build
+  Test::More
+
 COPYRIGHT AND LICENCE
 
 This programs is Copyright 2003, Squirrel Consultancy.

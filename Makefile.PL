@@ -16,6 +16,7 @@ convenient location) to "make install".
 
 EOD
 
+my $x =
 WriteMakefile(
     NAME		=> 'mp3info',
     VERSION_FROM	=> 'script/mp3info',
@@ -30,4 +31,19 @@ WriteMakefile(
    PL_FILES		=> {},
 );
 
+my $name    = $x->{NAME};
+my $version = $x->{VERSION};
+
+my $fh;
+if ( open ($fh, "$name.spec.in") ) {
+    print "Writing RPM spec file...\n";
+    my $newfh;
+    open ($newfh, ">$name.spec");
+    while ( <$fh> ) {
+	s/%define modname \w+/%define modname $name/;
+	s/%define modversion \d+\.\d+/%define modversion $version/;
+	print $newfh $_;
+    }
+    close($newfh);
+}
 

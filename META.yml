@@ -1,0 +1,14 @@
+--- #YAML:1.0
+name: mp3info
+version: 1.05
+license: perl
+distribution_type: module
+requires:
+  Getopt::Long: 2.33
+  MP3::Info: 1.02
+recommends: {}
+build_requires:
+  Test::More: 0
+conflicts: {}
+provides: {}
+generated_by: Module::Build version 0.20

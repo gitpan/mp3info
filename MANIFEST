@@ -11,4 +11,5 @@ t/id3tags.t
 t/id3tags.ref
 t/differ.pl
 mp3info.spec
+META.yml
 
