@@ -1,0 +1,11 @@
+Changes
+Makefile.PL
+MANIFEST
+script/mp3info
+README
+t/basic.t
+t/x1.mp3
+t/basic.ref
+t/differ.pl
+mp3info.spec
+

@@ -1,0 +1,252 @@
+#!/usr/bin/perl -w
+my $RCS_Id = '$Id: mp3info.pl,v 1.2 2003/07/31 20:56:51 jv Exp $ ';
+
+# Author          : Johan Vromans
+# Created On      : Thu Jul 31 22:35:53 2003
+# Last Modified By: Johan Vromans
+# Last Modified On: Thu Jul 31 22:36:11 2003
+# Update Count    : 2
+# Status          : Unknown, Use with caution!
+
+################ Common stuff ################
+
+$VERSION = sprintf("%d.%02d", '$Revision: 1.2 $ ' =~ /: (\d+)\.(\d+)/);
+
+use strict;
+
+# Package name.
+my $my_package = 'Sciurix';
+# Program name and version.
+my ($my_name, $my_version) = $RCS_Id =~ /: (.+).pl,v ([\d.]+)/;
+# Tack '*' if it is not checked in into RCS.
+$my_version .= '*' if length('$Locker:  $ ') > 12;
+
+use FindBin;
+use lib $FindBin::Bin;
+
+################ Command line parameters ################
+
+my $verbose = 0;		# more verbosity
+
+# Development options (not shown with --help).
+my $debug = 0;			# debugging
+my $trace = 0;			# trace (show process)
+my $test = 0;			# test mode.
+
+# Process command line options.
+app_options();
+
+# Post-processing.
+$trace |= ($debug || $test);
+
+################ Presets ################
+
+my $TMPDIR = $ENV{TMPDIR} || $ENV{TEMP} || '/usr/tmp';
+
+################ The Process ################
+
+use MP3::Info;
+
+foreach my $file ( @ARGV ) {
+
+    my $info = get_mp3info($file);
+    if ( !defined($info) && !$MP3::Info::try_harder
+	 && $@ =~ /try_harder/ ) {
+	$MP3::Info::try_harder = 1;
+	$info = get_mp3info($file);
+    }
+    unless ( $info ) {
+	warn("$file: No info ($@)?\n");
+	next;
+    }
+
+=item get_mp3info (FILE)
+
+Returns hash reference containing file information for MP3 file.
+This data cannot be changed.  Returned data:
+
+	VERSION		MPEG audio version (1, 2, 2.5)
+	LAYER		MPEG layer description (1, 2, 3)
+	STEREO		boolean for audio is in stereo
+
+	VBR		boolean for variable bitrate
+	BITRATE		bitrate in kbps (average for VBR files)
+	FREQUENCY	frequency in kHz
+	SIZE		bytes in audio stream
+
+	SECS		total seconds
+	MM		minutes
+	SS		leftover seconds
+	MS		leftover milliseconds
+	TIME		time in MM:SS
+
+	COPYRIGHT	boolean for audio is copyrighted
+	PADDING		boolean for MP3 frames are padded
+	MODE		channel mode (0 = stereo, 1 = joint stereo,
+			2 = dual channel, 3 = single channel)
+	FRAMES		approximate number of frames
+	FRAME_LENGTH	approximate length of a frame
+	VBR_SCALE	VBR scale from VBR header
+
+=cut
+
+    print STDOUT ("$file:\n");
+
+    if ( $info->{VERSION} == 1 && $info->{LAYER} == 3 ) {
+	print STDOUT
+	  ("  MP3",
+	   $info->{STEREO} ? "" : "  Mono",
+	   "  Mode: ",      $info->{MODE}, " (", mode($info->{MODE}), ")",
+	   "  Bitrate: ", $info->{BITRATE},
+	   $info->{VBR} ? " VBR" : "",
+	   "  Frequency: ", $info->{FREQUENCY}, " Khz",
+	   "\n",
+	  );
+    }
+    else {
+	print STDOUT
+	  ("  MPEG Version: ", $info->{VERSION},
+	   "  Layer: ",   $info->{LAYER},
+	   $info->{STEREO} ? "  Stereo" : "  Mono",
+	   "  Mode: ",      $info->{MODE}, " (", mode($info->{MODE}), ")",
+	   "\n",
+	   "  Bitrate: ", $info->{BITRATE},
+	   $info->{VBR} ? " VBR" : "",
+	   "  Frequency: ", $info->{FREQUENCY}, " Khz",
+	   "\n",
+	  );
+    }
+    print STDOUT
+      ("  Time: ",    $info->{TIME},
+       " (", 
+       # sprintf("%02d:%02d:%.2f", $info->{MM}, $info->{SS},
+       #	    $info->{MS}), ", ",
+       sprintf("%.5f", $info->{SECS}), " seconds)",
+       "  Copyright: ", yn($info->{COPYRIGHT}),
+       "  Padding: ",   yn($info->{PADDING}),
+       "\n",
+       "  Frames: ",  $info->{FRAMES},
+       "  Frame Length: ", $info->{FRAME_LENGTH},
+       $info->{VBR} ? ("  VBR Scale: ", $info->{VBR_SCALE}) : (),
+       "  Audio Size: ",    $info->{SIZE}, " bytes",
+       "\n",
+      );
+}
+
+################ Subroutines ################
+
+sub yn {
+    $_[0] ? "Yes" : "No";
+}
+
+sub mode {
+    $_[0] == 0 ? "Stereo" :
+      $_[0] == 1 ? "Joint Stereo" :
+	$_[0] == 2 ? "Dual Channel" :
+	  $_[0] == 3 ? "Single Channel" :
+	    "";
+}
+
+################ Command Line Options ################
+
+use Getopt::Long 2.33;		# will enable help/version
+
+sub app_options {
+
+    GetOptions(ident	   => \&app_ident,
+	       'verbose|v' => \$verbose,
+
+	       # application specific options go here
+
+	       # development options
+	       test	   => \$test,
+	       trace	   => \$trace,
+	       debug	   => \$debug)
+      or Getopt::Long::HelpMessage(2);
+}
+
+sub app_ident {
+    print STDOUT ("This is $my_package [$my_name $my_version]\n");
+}
+
+__END__
+
+=head1 NAME
+
+mp3info - prints MP3 header info
+
+=head1 SYNOPSIS
+
+mp3info [options] [file ...]
+
+Options:
+
+   --ident		show identification
+   --help		brief help message
+   --verbose		verbose information
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--verbose>
+
+More verbose information.
+
+=item B<--version>
+
+Print a version identification to standard output and exits.
+
+=item B<--help>
+
+Print a brief help message to standard output and exits.
+
+=item B<--ident>
+
+Prints a program identification.
+
+=item I<file>
+
+Input file(s).
+
+=back
+
+=head1 DESCRIPTION
+
+B<This program> will read the given input file(s), which must be
+valid MP3 files, and print a summary of the header data.
+
+=head1 EXAMPLE
+
+  % mp3info Tangerine_Dream/Green_Desert/*mp3
+  Tangerine_Dream/Green_Desert/02_White_Clouds.mp3:
+    MP3  Mode: 1 (Joint Stereo)  Bitrate: 242 VBR  Frequency: 44.1 Khz
+    Time: 05:02 (302.86367 seconds)  Copyright: No  Padding: No
+    Frames: 11594  Frame Length: 792  VBR Scale: 78  Audio Size: 9189857 bytes
+  Tangerine_Dream/Green_Desert/03_Astral_Voyager.mp3:
+    MP3  Mode: 1 (Joint Stereo)  Bitrate: 199 VBR  Frequency: 44.1 Khz
+    Time: 07:07 (427.78122 seconds)  Copyright: No  Padding: No
+    Frames: 16376  Frame Length: 651  VBR Scale: 78  Audio Size: 10675236 bytes
+  Tangerine_Dream/Green_Desert/04_Indian_Summer.mp3:
+    MP3  Mode: 1 (Joint Stereo)  Bitrate: 212 VBR  Frequency: 44.1 Khz
+    Time: 06:53 (413.64898 seconds)  Copyright: No  Padding: No
+    Frames: 15835  Frame Length: 694  VBR Scale: 78  Audio Size: 10996089 bytes
+
+=head1 REQUIREMENTS
+
+L<MP3::Info>.
+
+=head1 AUTHOR
+
+Johan Vromans <jvromans@squirrel.nl>
+
+=head1 COPYRIGHT
+
+This programs is Copyright 2003, Squirrel Consultancy.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the Perl Artistic License or the GNU General
+Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+=cut
