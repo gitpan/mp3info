@@ -1,5 +1,5 @@
 %define modname mp3info
-%define modversion 1.05
+%define modversion 1.06
 %define modpath authors/id/J/JV/JV/%{modname}-%{modversion}.tar.gz
 %define modreq perl perl-MP3-Info
 %define buildreq perl perl-Module-Build perl-Test-More

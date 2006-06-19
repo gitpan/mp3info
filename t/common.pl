@@ -1,5 +1,9 @@
 # $Id: differ.pl,v 1.1 2001-06-23 12:35:56+02 jv Exp $
 
+use File::Spec;
+
+$prog = File::Spec->canonpath("../blib/script/mp3info");
+
 sub differ {
     # Perl version of the 'cmp' program.
     # Returns 1 if the files differ, 0 if the contents are equal.

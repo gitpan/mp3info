@@ -1,5 +1,9 @@
 Revision history for Perl extension mp3info.
 
+1.06  Mon Jun 19 2006
+      - Noting particular, just some small changes to have the tests
+        pass on Windows.
+
 1.03  Tue Aug 12 19:01:35 2003
 	- Allow directories as arguments. It will process all MP3
 	files found in there.

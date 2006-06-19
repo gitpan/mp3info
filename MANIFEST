@@ -9,7 +9,7 @@ t/basic.t
 t/basic.ref
 t/id3tags.t
 t/id3tags.ref
-t/differ.pl
+t/common.pl
 mp3info.spec
 META.yml
 

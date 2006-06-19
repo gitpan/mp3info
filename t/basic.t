@@ -1,14 +1,19 @@
+#! perl
+
 use Test::More tests => 2;
+use strict;
+use warnings;
 
 -d "t" && chdir "t";
 
-require "differ.pl";
-ok(1);
+our $prog;
+
+require_ok("common.pl");
 
 my @dels = qw(x1.out);
 
 unlink(@dels);
-system("../blib/script/mp3info x1.mp3 > x1.out");
+system("$prog x1.mp3 > x1.out");
 
 ok(!differ("x1.out", "basic.ref"));
 
